@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AppConfig, UserSession, showConnect, openContractCall } from '@stacks/connect';
+import { AppConfig, UserSession, authenticate, openContractCall } from '@stacks/connect';
 import { 
   AnchorMode,
   PostConditionMode,
@@ -44,32 +44,21 @@ export default function Home() {
     if (!userSession) return;
     
     try {
-      if (typeof connect.showConnect === 'function') {
-        await connect.showConnect({
-          appDetails: {
-            name: 'Fortifier',
-            icon: window.location.origin + '/icon.png',
-          },
-          onFinish: () => {
-            if (userSession) {
-              const userData = userSession.loadUserData();
-              setUserData(userData);
-              setStatus('Wallet connected!');
-            }
-          },
-          userSession,
-        });
-      } else {
-        // Fallback: try to authenticate directly
-        if (userSession.authenticate) {
-          await userSession.authenticate();
-          const userData = userSession.loadUserData();
-          setUserData(userData);
-          setStatus('Wallet connected!');
-        } else {
-          setStatus('Error: Wallet connection not available');
-        }
-      }
+      await authenticate({
+        appDetails: {
+          name: 'Fortifier',
+          icon: window.location.origin + '/icon.png',
+        },
+        redirectTo: '/',
+        onFinish: () => {
+          if (userSession) {
+            const userData = userSession.loadUserData();
+            setUserData(userData);
+            setStatus('Wallet connected!');
+          }
+        },
+        userSession,
+      });
     } catch (error: any) {
       console.error('Error connecting wallet:', error);
       setStatus(`Error: ${error.message || 'Failed to connect wallet'}`);
