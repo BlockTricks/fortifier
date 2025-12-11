@@ -6,42 +6,77 @@
  */
 
 import * as transactions from '@stacks/transactions';
-import { readFileSync } from 'fs';
+import networkPkg from '@stacks/network';
+import { generateWallet } from '@stacks/wallet-sdk';
+import { mnemonicToSeedSync } from '@scure/bip39';
+import { HDKey } from '@scure/bip32';
+import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { config } from 'dotenv';
+
+// Use networkFromName to create network instances
+const { networkFromName } = networkPkg;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Load .env file manually to handle multi-word mnemonics
+const envPath = join(__dirname, '..', '.env');
+if (existsSync(envPath)) {
+  const envContent = readFileSync(envPath, 'utf8');
+  const lines = envContent.split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith('#')) {
+      const equalIndex = trimmed.indexOf('=');
+      if (equalIndex > 0) {
+        const key = trimmed.substring(0, equalIndex).trim();
+        let value = trimmed.substring(equalIndex + 1).trim();
+        // Remove quotes if present
+        if ((value.startsWith('"') && value.endsWith('"')) || 
+            (value.startsWith("'") && value.endsWith("'"))) {
+          value = value.slice(1, -1);
+        }
+        if (!process.env[key]) {
+          process.env[key] = value;
+        }
+      }
+    }
+  }
+}
+
+// Only deploy circuit-breaker to stay under 0.5 STX limit
 const CONTRACTS = [
-  'circuit-breaker',
-  'guard',
-  'quarantine',
-  'role-change-guardian',
-  'fortifier'
+  'circuit-breaker'
 ];
 
-async function deployContract(contractName, network, privateKey) {
+async function deployContract(contractName, network, privateKey, isMainnet, deployerAddress) {
   const contractPath = join(__dirname, '..', 'contracts', `${contractName}.clar`);
   const contractCode = readFileSync(contractPath, 'utf8');
   
-  const address = transactions.getAddressFromPrivateKey(privateKey, transactions.AddressVersion.TestnetSingleSig);
-  const contractAddress = address.split('.')[0];
+  // Convert hex private key to Buffer
+  const privateKeyBuffer = Buffer.from(privateKey, 'hex');
+  
+  // Use the provided deployer address
+  const address = deployerAddress;
+  const contractAddress = address;
   
   console.log(`\n📦 Deploying ${contractName}...`);
   console.log(`   Address: ${address}`);
   
   try {
-    // Get nonce
-    const account = await transactions.getAccountNonce({
-      address,
-      network
-    });
+    // Get account info including nonce
+    const { getAccount } = await import('@stacks/network');
+    const client = getAccount(network);
+    const accountInfo = await client.getAccount(address);
+    const nonce = accountInfo.nonce;
     
+    // Create final transaction with correct nonce
     const txOptions = {
       contractName,
       codeBody: contractCode,
-      senderKey: privateKey,
+      senderKey: privateKeyBuffer,
       network,
       anchorMode: transactions.AnchorMode.Any,
       postConditionMode: transactions.PostConditionMode.Allow,
@@ -64,7 +99,7 @@ async function deployContract(contractName, network, privateKey) {
     
     console.log(`   ✅ Broadcast successful!`);
     console.log(`   📡 TX ID: ${broadcastResponse.txid}`);
-    const chainParam = network.chainId === transactions.ChainID.Testnet ? 'testnet' : 'mainnet';
+    const chainParam = network.chainId === 2147483648 ? 'testnet' : 'mainnet';
     console.log(`   🔗 Explorer: https://explorer.stacks.co/txid/${broadcastResponse.txid}?chain=${chainParam}`);
     
     return {
@@ -89,17 +124,78 @@ async function main() {
     process.exit(1);
   }
   
-  // Create network configuration
-  const network = networkType === 'testnet' 
-    ? new transactions.StacksTestnet({ url: 'https://api.testnet.hiro.so' })
-    : new transactions.StacksMainnet({ url: 'https://api.hiro.so' });
+  const isMainnet = networkType === 'mainnet';
   
-  // Get private key from environment
-  const privateKey = process.env.DEPLOYER_PRIVATE_KEY;
+  // Create network configuration
+  const network = networkFromName(isMainnet ? 'mainnet' : 'testnet', {
+    url: isMainnet ? 'https://api.hiro.so' : 'https://api.testnet.hiro.so'
+  });
+  
+  // Get private key from environment or mnemonic
+  let privateKey = process.env.DEPLOYER_PRIVATE_KEY;
+  
+  // If no private key, try to get from mnemonic
+  if (!privateKey) {
+    // Try reading directly from .env file if env var is incomplete
+    let mnemonic = process.env.DEPLOYER_MNEMONIC;
+    if (!mnemonic || mnemonic.split(/\s+/).length < 12) {
+      // Read directly from .env file
+      const envPath = join(__dirname, '..', '.env');
+      if (existsSync(envPath)) {
+        const envContent = readFileSync(envPath, 'utf8');
+        const mnemonicMatch = envContent.match(/DEPLOYER_MNEMONIC\s*=\s*(.+?)(?:\n|$)/);
+        if (mnemonicMatch) {
+          mnemonic = mnemonicMatch[1].trim();
+          // Remove quotes if present
+          if ((mnemonic.startsWith('"') && mnemonic.endsWith('"')) || 
+              (mnemonic.startsWith("'") && mnemonic.endsWith("'"))) {
+            mnemonic = mnemonic.slice(1, -1);
+          }
+        }
+      }
+    }
+    
+    if (mnemonic) {
+      try {
+        console.log('🔑 Deriving private key from mnemonic...');
+        // Clean up mnemonic
+        mnemonic = mnemonic.trim().replace(/^["']|["']$/g, '');
+        const words = mnemonic.split(/\s+/).filter(w => w.length > 0);
+        console.log(`   Mnemonic words: ${words.length}`);
+        console.log(`   First 3 words: ${words.slice(0, 3).join(' ')}`);
+        
+        // Try using @stacks/wallet-sdk first
+        try {
+          const wallet = await generateWallet({ secretKey: mnemonic, password: '' });
+          const account = wallet.accounts[0];
+          privateKey = account.stxPrivateKey;
+          console.log(`   ✅ Derived address: ${account.address}`);
+        } catch (walletError) {
+          // Fallback: derive directly using BIP39 and BIP32
+          console.log('   Using direct BIP39 derivation...');
+          const seed = mnemonicToSeedSync(mnemonic);
+          const hdKey = HDKey.fromMasterSeed(seed);
+          // Stacks uses derivation path m/44'/5757'/0'/0/0
+          const stacksKey = hdKey.derive("m/44'/5757'/0'/0/0");
+          privateKey = stacksKey.privateKey?.toString('hex');
+          if (!privateKey) {
+            throw new Error('Failed to derive private key');
+          }
+          const address = transactions.getAddressFromPrivateKey(privateKey, isMainnet ? transactions.AddressVersion.MainnetSingleSig : transactions.AddressVersion.TestnetSingleSig);
+          console.log(`   ✅ Derived address: ${address}`);
+        }
+      } catch (error) {
+        console.error('❌ Failed to derive private key from mnemonic:', error.message);
+        console.error('   Make sure the mnemonic is valid BIP39 format (12 or 24 words)');
+        process.exit(1);
+      }
+    }
+  }
   
   if (!privateKey) {
-    console.error('❌ DEPLOYER_PRIVATE_KEY environment variable not set');
+    console.error('❌ DEPLOYER_PRIVATE_KEY or DEPLOYER_MNEMONIC environment variable not set');
     console.error('   Set it with: export DEPLOYER_PRIVATE_KEY=your_private_key');
+    console.error('   Or: export DEPLOYER_MNEMONIC="your 24 word mnemonic"');
     console.error('   Or add it to .env file');
     process.exit(1);
   }
@@ -112,7 +208,7 @@ async function main() {
   const results = [];
   
   for (const contract of CONTRACTS) {
-    const result = await deployContract(contract, network, privateKey);
+    const result = await deployContract(contract, network, privateKey, isMainnet);
     if (result) {
       results.push(result);
     }

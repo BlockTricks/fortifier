@@ -24,10 +24,10 @@ export default function Home() {
     if (typeof window !== 'undefined') {
       const appConfig = new AppConfig(['store_write', 'publish_data']);
       const session = new UserSession({ appConfig });
-      // Create network configuration object for mainnet
+      // Create network configuration object for testnet (contract is deployed here)
       const net = {
-        url: 'https://api.hiro.so',
-        network: 'mainnet' as const,
+        url: 'https://api.testnet.hiro.so',
+        network: 'testnet' as const,
       };
       
       setUserSession(session);
@@ -76,7 +76,7 @@ export default function Home() {
   const checkPauseStatus = async () => {
     try {
       const response = await fetch(
-        `https://api.hiro.so/v2/contracts/call-read/${address}/${contractName}/is-paused`,
+        `https://api.testnet.hiro.so/v2/contracts/call-read/${address}/${contractName}/is-paused`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -108,10 +108,7 @@ export default function Home() {
         contractName: contractName,
         functionName: 'pause',
         functionArgs: [],
-        network: {
-          version: network.network === 'mainnet' ? 0x00000001 : 0x80000000,
-          chainId: network.network === 'mainnet' ? 0x00000001 : 0x80000000,
-        },
+        network: network.network,
         anchorMode: AnchorMode.Any,
         postConditionMode: PostConditionMode.Allow,
         onFinish: (data) => {
@@ -123,13 +120,10 @@ export default function Home() {
           setStatus('Transaction cancelled');
           setLoading(false);
         },
-        onError: (error) => {
-          setStatus(`Error: ${error.message || 'Transaction failed'}`);
-          setLoading(false);
-        },
       });
     } catch (error: any) {
-      setStatus(`Error: ${error.message}`);
+      console.error('Transaction error:', error);
+      setStatus(`Error: ${error.message || 'Transaction failed. Make sure you are the contract owner and have sufficient STX for fees.'}`);
       setLoading(false);
     }
   };
@@ -163,7 +157,8 @@ export default function Home() {
         },
       });
     } catch (error: any) {
-      setStatus(`Error: ${error.message}`);
+      console.error('Transaction error:', error);
+      setStatus(`Error: ${error.message || 'Transaction failed. Make sure you are the contract owner and have sufficient STX for fees.'}`);
       setLoading(false);
     }
   };
@@ -217,7 +212,7 @@ export default function Home() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-400 dark:text-gray-600">Connected</p>
-                    <p className="text-lg font-mono dark:text-gray-900">{userData.profile?.stxAddress?.mainnet || userData.profile?.stxAddress?.testnet || 'N/A'}</p>
+                    <p className="text-lg font-mono dark:text-gray-900">{userData.profile?.stxAddress?.testnet || userData.profile?.stxAddress?.mainnet || 'N/A'}</p>
                   </div>
                   <button
                     onClick={disconnect}
@@ -282,7 +277,7 @@ export default function Home() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-400 dark:text-gray-600">Network:</span>
-                  <span className="font-mono dark:text-gray-900">Mainnet</span>
+                  <span className="font-mono dark:text-gray-900">Testnet</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-400 dark:text-gray-600">Contract:</span>
@@ -291,7 +286,7 @@ export default function Home() {
                 <div className="flex justify-between">
                   <span className="text-gray-400 dark:text-gray-600">Explorer:</span>
                   <a 
-                    href={`https://explorer.stacks.co/?chain=mainnet&address=${address}`}
+                    href={`https://explorer.stacks.co/?chain=testnet&address=${address}`}
             target="_blank"
             rel="noopener noreferrer"
                     className="text-blue-400 dark:text-blue-600 hover:text-blue-300 dark:hover:text-blue-700"
