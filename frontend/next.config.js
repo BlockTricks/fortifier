@@ -1,10 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Explicitly disable Turbopack
-  experimental: {
-    turbo: undefined,
-  },
   webpack: (config, { isServer }) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
@@ -30,6 +26,11 @@ const nextConfig = {
       test: /\.(md|txt|LICENSE)$/,
       use: 'ignore-loader',
     });
+    
+    // Ignore problematic test-related exports from viem
+    config.resolve.alias = {
+      ...config.resolve.alias,
+    };
     
     // Exclude problematic packages from being processed
     if (!isServer) {
