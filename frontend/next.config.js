@@ -2,6 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   webpack: (config, { isServer }) => {
+    const webpack = require('webpack');
+    const path = require('path');
+    
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
@@ -27,35 +30,53 @@ const nextConfig = {
       use: 'ignore-loader',
     });
     
-    // Handle viem testActions export issue
-    const webpack = require('webpack');
-    const path = require('path');
+    // Handle viem testActions export issue with comprehensive replacement
     config.plugins = config.plugins || [];
+    const viemTestStub = path.resolve(__dirname, 'webpack-fixes/viem-test-stub.js');
     
-    // Replace viem test decorators module with our stub
+    // Replace all variations of viem test decorator imports
     config.plugins.push(
       new webpack.NormalModuleReplacementPlugin(
-        /^.*\/viem\/_esm\/clients\/decorators\/test\.js$/,
-        path.resolve(__dirname, 'webpack-fixes/viem-test-stub.js')
+        /(.*\/)?viem\/_esm\/clients\/decorators\/test\.js$/,
+        viemTestStub
       )
     );
     
-    // Also try replacing relative imports
     config.plugins.push(
       new webpack.NormalModuleReplacementPlugin(
-        /\.\/clients\/decorators\/test\.js$/,
+        /(.*\/)?viem\/_cjs\/clients\/decorators\/test\.js$/,
+        viemTestStub
+      )
+    );
+    
+    // Handle relative imports from within viem packages
+    config.plugins.push(
+      new webpack.NormalModuleReplacementPlugin(
+        /^\.\/clients\/decorators\/test\.js$/,
         (resource) => {
-          if (resource.context.includes('viem')) {
-            resource.request = path.resolve(__dirname, 'webpack-fixes/viem-test-stub.js');
+          if (resource.context && (resource.context.includes('viem') || resource.context.includes('@walletconnect'))) {
+            resource.request = viemTestStub;
           }
         }
       )
     );
     
+    config.plugins.push(
+      new webpack.NormalModuleReplacementPlugin(
+        /^\.\.\/decorators\/test\.js$/,
+        (resource) => {
+          if (resource.context && (resource.context.includes('viem') || resource.context.includes('@walletconnect'))) {
+            resource.request = viemTestStub;
+          }
+        }
+      )
+    );
+    
+    // Comprehensive resolve aliases
     config.resolve.alias = {
       ...config.resolve.alias,
-      // Direct alias for viem test decorators
-      'viem/_esm/clients/decorators/test': path.resolve(__dirname, 'webpack-fixes/viem-test-stub.js'),
+      'viem/_esm/clients/decorators/test': viemTestStub,
+      'viem/_cjs/clients/decorators/test': viemTestStub,
     };
     
     // Exclude problematic packages from being processed
@@ -72,4 +93,3 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
-
