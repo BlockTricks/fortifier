@@ -112,10 +112,7 @@ export default function Home() {
       };
 
       const transaction = await makeContractCall(txOptions);
-      const broadcastResponse = await broadcastTransaction(transaction, {
-        url: network.url,
-        network: network.network,
-      });
+      const broadcastResponse = await broadcastTransaction(transaction);
 
       if ('error' in broadcastResponse) {
         setStatus(`Error: ${broadcastResponse.error}`);
@@ -153,10 +150,7 @@ export default function Home() {
       };
 
       const transaction = await makeContractCall(txOptions);
-      const broadcastResponse = await broadcastTransaction(transaction, {
-        url: network.url,
-        network: network.network,
-      });
+      const broadcastResponse = await broadcastTransaction(transaction);
 
       if ('error' in broadcastResponse) {
         setStatus(`Error: ${broadcastResponse.error}`);
