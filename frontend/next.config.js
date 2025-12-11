@@ -27,7 +27,19 @@ const nextConfig = {
       use: 'ignore-loader',
     });
     
-    // Ignore problematic test-related exports from viem
+    // Handle viem testActions export issue
+    const webpack = require('webpack');
+    const path = require('path');
+    config.plugins = config.plugins || [];
+    
+    // Use NormalModuleReplacementPlugin to replace viem test module
+    config.plugins.push(
+      new webpack.NormalModuleReplacementPlugin(
+        /viem\/_esm\/clients\/decorators\/test\.js$/,
+        path.resolve(__dirname, 'webpack-fixes/viem-test-stub.js')
+      )
+    );
+    
     config.resolve.alias = {
       ...config.resolve.alias,
     };
