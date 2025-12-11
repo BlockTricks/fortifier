@@ -108,10 +108,7 @@ export default function Home() {
         contractName: contractName,
         functionName: 'pause',
         functionArgs: [],
-        network: {
-          version: network.network === 'mainnet' ? 0x00000001 : 0x80000000,
-          chainId: network.network === 'mainnet' ? 0x00000001 : 0x80000000,
-        },
+        network: network.network,
         anchorMode: AnchorMode.Any,
         postConditionMode: PostConditionMode.Allow,
         onFinish: (data) => {
@@ -123,13 +120,10 @@ export default function Home() {
           setStatus('Transaction cancelled');
           setLoading(false);
         },
-        onError: (error) => {
-          setStatus(`Error: ${error.message || 'Transaction failed'}`);
-          setLoading(false);
-        },
       });
     } catch (error: any) {
-      setStatus(`Error: ${error.message}`);
+      console.error('Transaction error:', error);
+      setStatus(`Error: ${error.message || 'Transaction failed. Make sure you are the contract owner and have sufficient STX for fees.'}`);
       setLoading(false);
     }
   };
@@ -163,7 +157,8 @@ export default function Home() {
         },
       });
     } catch (error: any) {
-      setStatus(`Error: ${error.message}`);
+      console.error('Transaction error:', error);
+      setStatus(`Error: ${error.message || 'Transaction failed. Make sure you are the contract owner and have sufficient STX for fees.'}`);
       setLoading(false);
     }
   };
