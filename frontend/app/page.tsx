@@ -108,7 +108,10 @@ export default function Home() {
         contractName: contractName,
         functionName: 'pause',
         functionArgs: [],
-        network: network.network,
+        network: {
+          version: network.network === 'mainnet' ? 0x00000001 : 0x80000000,
+          chainId: network.network === 'mainnet' ? 0x00000001 : 0x80000000,
+        },
         anchorMode: AnchorMode.Any,
         postConditionMode: PostConditionMode.Allow,
         onFinish: (data) => {
@@ -118,6 +121,10 @@ export default function Home() {
         },
         onCancel: () => {
           setStatus('Transaction cancelled');
+          setLoading(false);
+        },
+        onError: (error) => {
+          setStatus(`Error: ${error.message || 'Transaction failed'}`);
           setLoading(false);
         },
       });
@@ -193,8 +200,8 @@ export default function Home() {
             </p>
             <p className="text-sm text-gray-400 dark:text-gray-600 mt-2">
               Contract: {CONTRACT_ADDRESS}
-            </p>
-          </div>
+          </p>
+        </div>
 
           <div className="bg-gray-800/50 dark:bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-gray-700 dark:border-gray-300">
             {/* Wallet Connection */}
@@ -285,18 +292,18 @@ export default function Home() {
                   <span className="text-gray-400 dark:text-gray-600">Explorer:</span>
                   <a 
                     href={`https://explorer.stacks.co/?chain=mainnet&address=${address}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+            target="_blank"
+            rel="noopener noreferrer"
                     className="text-blue-400 dark:text-blue-600 hover:text-blue-300 dark:hover:text-blue-700"
-                  >
+          >
                     View on Explorer
-                  </a>
+          </a>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </main>
+        </div>
+      </main>
   );
 }
