@@ -11,7 +11,7 @@ plan:
         - contract-publish:
             contract-name: circuit-breaker
             expected-sender: ST2QNSNKR3NRDWNTX0Q7R4T8WGBJ8RE8RA7GKS7WN
-            cost: 911426
+            cost: 482385
             path: contracts/circuit-breaker.clar
             anchor-block-only: true
             clarity-version: 1
