@@ -1,0 +1,41 @@
+[project]
+name = "fortifier"
+authors = ["Fortifier Team"]
+description = "On-chain incident response and resilience toolkit for DAOs/treasuries"
+
+[contracts.circuit-breaker]
+path = "contracts/circuit-breaker.clar"
+clarity_version = 4
+
+[contracts.guard]
+path = "contracts/guard.clar"
+clarity_version = 4
+
+[contracts.quarantine]
+path = "contracts/quarantine.clar"
+clarity_version = 4
+
+[contracts.role-change-guardian]
+path = "contracts/role-change-guardian.clar"
+clarity_version = 4
+
+[contracts.fortifier]
+path = "contracts/fortifier.clar"
+clarity_version = 4
+
+[requirements]
+[[requirements.contract_id]]
+contract_id = "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.circuit-breaker"
+
+[[requirements.contract_id]]
+contract_id = "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.guard"
+
+[[requirements.contract_id]]
+contract_id = "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.quarantine"
+
+[[requirements.contract_id]]
+contract_id = "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.role-change-guardian"
+
+[repl]
+costs = { read_count = 15, read_length = 15, runtime = 15, write_count = 15, write_length = 15 }
+

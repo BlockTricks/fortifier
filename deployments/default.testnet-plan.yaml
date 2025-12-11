@@ -1,0 +1,46 @@
+---
+id: 0
+name: "Fortifier Testnet Deployment"
+network: testnet
+stacks-node: "https://api.testnet.hiro.so"
+bitcoin-node: "https://mempool.space/testnet/api"
+plan:
+  batches:
+    - id: 0
+      transactions:
+        - contract-publish:
+            contract-name: circuit-breaker
+            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            cost: 50000
+            path: contracts/circuit-breaker.clar
+            anchor-block-only: true
+            clarity-version: 4
+        - contract-publish:
+            contract-name: guard
+            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            cost: 50000
+            path: contracts/guard.clar
+            anchor-block-only: true
+            clarity-version: 4
+        - contract-publish:
+            contract-name: quarantine
+            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            cost: 50000
+            path: contracts/quarantine.clar
+            anchor-block-only: true
+            clarity-version: 4
+        - contract-publish:
+            contract-name: role-change-guardian
+            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            cost: 50000
+            path: contracts/role-change-guardian.clar
+            anchor-block-only: true
+            clarity-version: 4
+        - contract-publish:
+            contract-name: fortifier
+            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            cost: 50000
+            path: contracts/fortifier.clar
+            anchor-block-only: true
+            clarity-version: 4
+

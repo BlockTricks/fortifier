@@ -1,0 +1,35 @@
+{
+  "name": "fortifier",
+  "version": "1.0.0",
+  "description": "On-chain incident response and resilience toolkit for DAOs/treasuries",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "check": "clarinet check",
+    "deploy:testnet": "node scripts/deploy.js testnet",
+    "deploy:mainnet": "node scripts/deploy.js mainnet",
+    "deploy:clarinet": "clarinet deployments generate --testnet --low-cost && clarinet deployment apply -p deployments/default.testnet-plan.yaml"
+  },
+  "keywords": [
+    "stacks",
+    "clarity",
+    "dao",
+    "treasury",
+    "security",
+    "circuit-breaker"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@stacks/connect": "^8.2.3",
+    "@stacks/transactions": "^7.3.0"
+  },
+  "devDependencies": {
+    "vitest": "^1.0.0",
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}
+
