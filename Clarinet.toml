@@ -5,23 +5,18 @@ description = "On-chain incident response and resilience toolkit for DAOs/treasu
 
 [contracts.circuit-breaker]
 path = "contracts/circuit-breaker.clar"
-clarity_version = 4
 
 [contracts.guard]
 path = "contracts/guard.clar"
-clarity_version = 4
 
 [contracts.quarantine]
 path = "contracts/quarantine.clar"
-clarity_version = 4
 
 [contracts.role-change-guardian]
 path = "contracts/role-change-guardian.clar"
-clarity_version = 4
 
 [contracts.fortifier]
 path = "contracts/fortifier.clar"
-clarity_version = 4
 
 [requirements]
 [[requirements.contract_id]]
