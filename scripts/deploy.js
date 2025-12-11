@@ -5,15 +5,14 @@
  * Uses @stacks/transactions to deploy Clarity 4 contracts to Stacks
  */
 
-import { 
+import * as transactions from '@stacks/transactions';
+const { 
   makeContractDeploy, 
   broadcastTransaction, 
   AnchorMode,
   PostConditionMode,
-  getAddressFromPrivateKey,
-  StacksTestnet,
-  StacksMainnet
-} from '@stacks/transactions';
+  getAddressFromPrivateKey
+} = transactions;
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -88,9 +87,16 @@ async function main() {
     process.exit(1);
   }
   
+  // Create network configuration
   const network = networkType === 'testnet' 
-    ? new StacksTestnet({ url: 'https://api.testnet.hiro.so' })
-    : new StacksMainnet({ url: 'https://api.hiro.so' });
+    ? {
+        coreApiUrl: 'https://api.testnet.hiro.so',
+        network: transactions.StacksNetworkVersion.testnet
+      }
+    : {
+        coreApiUrl: 'https://api.hiro.so',
+        network: transactions.StacksNetworkVersion.mainnet
+      };
   
   // Get private key from environment or settings
   const privateKey = process.env.DEPLOYER_PRIVATE_KEY;
