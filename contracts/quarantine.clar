@@ -139,3 +139,19 @@
 	(var-get guardians)
 )
 
+;; Public: Transfer ownership
+(define-public (transfer-ownership (new-owner principal))
+	(let ((caller tx-sender))
+		(begin
+			(asserts! (is-authorized caller) ERR-UNAUTHORIZED)
+			(var-set owner new-owner)
+			(ok true)
+		)
+	)
+)
+
+;; Public: Get owner
+(define-read-only (get-owner)
+	(var-get owner)
+)
+

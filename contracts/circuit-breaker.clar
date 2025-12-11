@@ -196,3 +196,20 @@
 	(var-get guardians)
 )
 
+;; Public: Transfer ownership (should use role-change-guardian for production)
+(define-public (transfer-ownership (new-owner principal))
+	(let ((caller tx-sender))
+		(begin
+			(asserts! (is-authorized caller) ERR-UNAUTHORIZED)
+			(asserts! (is-eq (var-get paused) false) ERR-PAUSED)
+			(var-set owner new-owner)
+			(ok true)
+		)
+	)
+)
+
+;; Public: Get owner
+(define-read-only (get-owner)
+	(var-get owner)
+)
+
