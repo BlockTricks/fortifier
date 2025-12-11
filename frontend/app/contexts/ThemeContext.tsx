@@ -41,11 +41,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     applyTheme(newTheme);
   };
 
-  // Prevent hydration mismatch
-  if (!mounted) {
-    return <>{children}</>;
-  }
-
+  // Always provide context, even before mounting (for SSR)
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}
@@ -56,7 +52,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
+    // Return default values if not in provider (for SSR/initial render)
+    return {
+      theme: 'dark' as Theme,
+      toggleTheme: () => {},
+    };
   }
   return context;
 }
