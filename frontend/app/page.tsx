@@ -14,7 +14,7 @@ const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || 'ST2QNSNKR3
 const [address, contractName] = CONTRACT_ADDRESS.split('.');
 
 export default function Home() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme } = typeof window !== 'undefined' ? useTheme() : { theme: 'dark' as const, toggleTheme: () => {} };
   const [userData, setUserData] = useState<any>(null);
   const [isPaused, setIsPaused] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
