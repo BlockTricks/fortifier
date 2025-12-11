@@ -82,7 +82,7 @@ export default function Home() {
   };
 
   const pauseContract = async () => {
-    if (!userData) {
+    if (!userData || !network) {
       setStatus('Please connect wallet first');
       return;
     }
@@ -120,7 +120,7 @@ export default function Home() {
   };
 
   const unpauseContract = async () => {
-    if (!userData) {
+    if (!userData || !network) {
       setStatus('Please connect wallet first');
       return;
     }
