@@ -24,19 +24,33 @@ Fortifier is a hackathon-grade blueprint for protecting DAO/treasury assets on S
   - Sends alerts to Discord/Telegram/Webhooks.
 - Dashboard (stretch): Incident console to review alerts, approve/deny actions, and track audit trails.
 
-## Repo Structure (current)
+## Repo Structure
 ```
-├── Clarinet.toml                 # Clarinet project config
-├── contracts/
-│   └── stream.clar               # Placeholder; will host Fortifier guards
+├── Clarinet.toml                 # Clarinet project config (Clarity 4)
+├── contracts/                    # Clarity 4 smart contracts
+│   ├── circuit-breaker.clar      # Circuit breaker module
+│   ├── guard.clar                # Policy guard module
+│   ├── quarantine.clar           # Quarantine registry
+│   ├── role-change-guardian.clar # Role change protection
+│   └── fortifier.clar            # Main integration contract
+├── src/                          # TypeScript source code
+│   └── fortifier-client.ts       # Client using @stacks/transactions
+├── examples/                     # Example implementations
+│   └── connect-example.tsx       # @stacks/connect integration
+├── scripts/                      # Deployment scripts
+│   ├── deploy.js                 # Deployment using @stacks/transactions
+│   └── verify-clarity4.js        # Clarity 4 verification
+├── tests/                        # Test suite
+│   ├── circuit-breaker.test.ts
+│   ├── guard.test.ts
+│   ├── quarantine.test.ts
+│   └── role-change-guardian.test.ts
 ├── deployments/
 │   └── default.testnet-plan.yaml # Deployment plan
-├── settings/
-│   ├── Devnet.toml               # Local dev config (gitignored)
-│   └── Testnet.toml              # Testnet config (gitignored)
-├── tests/
-│   └── stream.test.ts            # Placeholder tests
-├── package.json                  # JS toolchain (tests, scripts)
+├── settings/                     # Network configs (gitignored)
+│   ├── Devnet.toml
+│   └── Testnet.toml
+├── package.json                  # Dependencies: @stacks/connect, @stacks/transactions
 └── README.md
 ```
 
@@ -71,11 +85,23 @@ npm test                # Vitest suite (will expand with guard logic)
 ```
 
 ### 5) Deploy to testnet
+
+**Using @stacks/transactions (Recommended):**
 ```bash
-clarinet deployments generate --testnet --low-cost
-clarinet deployment apply -p deployments/default.testnet-plan.yaml
+export DEPLOYER_PRIVATE_KEY=your_private_key
+npm run deploy:testnet
 ```
-Inspect on the Hiro explorer (testnet).
+
+**Using Clarinet:**
+```bash
+npm run deploy:clarinet
+```
+
+Inspect on the [Hiro explorer (testnet)](https://explorer.stacks.co/?chain=testnet).
+
+### 6) Use @stacks/connect for interactions
+
+See `examples/connect-example.tsx` for wallet integration examples.
 
 ## Implementation Plan (guide for contributors)
 - Phase 1: Replace `stream.clar` with `circuit-breaker` + `guard` primitives (pause, staged unpause, spend caps, allow/deny lists).

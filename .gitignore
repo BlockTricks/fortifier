@@ -1,0 +1,11 @@
+settings/
+node_modules/
+.vscode/
+*.log
+.DS_Store
+auto-push.sh
+auto-push.log
+
+.env/
+.env
+env
