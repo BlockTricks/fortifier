@@ -46,36 +46,41 @@
 
 ;; Public: Check if transfer is allowed (comprehensive check)
 (define-public (check-transfer (recipient principal) (amount uint))
-	(let ((circuit-breaker (unwrap-panic (var-get circuit-breaker-contract)))
-		  (guard (unwrap-panic (var-get guard-contract)))
-		  (quarantine (unwrap-panic (var-get quarantine-contract))))
-		(begin
-			;; Check if circuit breaker is paused
-			(match (as-contract (contract-call? circuit-breaker is-paused))
-				paused (begin
-					(asserts! (not paused) ERR-PAUSED)
-					true
+	(match (var-get circuit-breaker-contract)
+		circuit-breaker-principal (match (var-get guard-contract)
+			guard-principal (match (var-get quarantine-contract)
+				quarantine-principal (begin
+					;; Check if circuit breaker is paused
+					(match (contract-call? circuit-breaker-principal is-paused)
+						paused (begin
+							(asserts! (not paused) ERR-PAUSED)
+							true
+						)
+						err-value (err ERR-CIRCUIT-BREAKER-CHECK-FAILED)
+					)
+					;; Check if recipient is quarantined
+					(match (contract-call? quarantine-principal is-quarantined recipient)
+						quarantined (begin
+							(asserts! (not quarantined) ERR-QUARANTINED)
+							true
+						)
+						err-value (err ERR-QUARANTINED)
+					)
+					;; Check guard policies
+					(match (contract-call? guard-principal validate-transfer recipient amount)
+						valid (begin
+							(asserts! valid ERR-GUARD-CHECK-FAILED)
+							true
+						)
+						err-value (err ERR-GUARD-CHECK-FAILED)
+					)
+					(ok (event-emit transfer-protected recipient amount false "transfer-allowed"))
 				)
-				err-value (err ERR-CIRCUIT-BREAKER-CHECK-FAILED)
+				none (err ERR-QUARANTINED)
 			)
-			;; Check if recipient is quarantined
-			(match (as-contract (contract-call? quarantine is-quarantined recipient))
-				quarantined (begin
-					(asserts! (not quarantined) ERR-QUARANTINED)
-					true
-				)
-				err-value (err ERR-QUARANTINED)
-			)
-			;; Check guard policies
-			(match (as-contract (contract-call? guard validate-transfer recipient amount))
-				valid (begin
-					(asserts! valid ERR-GUARD-CHECK-FAILED)
-					true
-				)
-				err-value (err ERR-GUARD-CHECK-FAILED)
-			)
-			(ok (event-emit transfer-protected recipient amount false "transfer-allowed"))
+			none (err ERR-GUARD-CHECK-FAILED)
 		)
+		none (err ERR-CIRCUIT-BREAKER-CHECK-FAILED)
 	)
 )
 
@@ -91,22 +96,26 @@
 
 ;; Public: Emergency pause (delegates to circuit breaker)
 (define-public (emergency-pause)
-	(let ((caller tx-sender)
-		  (circuit-breaker (unwrap-panic (var-get circuit-breaker-contract))))
+	(let ((caller tx-sender))
 		(begin
 			(asserts! (is-authorized caller) ERR-UNAUTHORIZED)
-			(as-contract (contract-call? circuit-breaker pause))
+			(match (var-get circuit-breaker-contract)
+				circuit-breaker (contract-call? circuit-breaker pause)
+				none (err ERR-CIRCUIT-BREAKER-CHECK-FAILED)
+			)
 		)
 	)
 )
 
 ;; Public: Emergency quarantine (delegates to quarantine contract)
 (define-public (emergency-quarantine (recipient principal) (reason (string-ascii 200)) (severity uint))
-	(let ((caller tx-sender)
-		  (quarantine (unwrap-panic (var-get quarantine-contract))))
+	(let ((caller tx-sender))
 		(begin
 			(asserts! (is-authorized caller) ERR-UNAUTHORIZED)
-			(as-contract (contract-call? quarantine quarantine-recipient recipient reason severity))
+			(match (var-get quarantine-contract)
+				quarantine (contract-call? quarantine quarantine-recipient recipient reason severity)
+				none (err ERR-QUARANTINED)
+			)
 		)
 	)
 )
@@ -124,7 +133,7 @@
 ;; Public: Get circuit breaker status
 (define-read-only (get-circuit-breaker-status)
 	(match (var-get circuit-breaker-contract)
-		contract (as-contract (contract-call? contract get-pause-info))
+		contract (contract-call? contract get-pause-info)
 		none none
 	)
 )
@@ -132,8 +141,24 @@
 ;; Public: Get guard status
 (define-read-only (get-guard-status)
 	(match (var-get guard-contract)
-		contract (as-contract (contract-call? contract get-spend-cap-info))
+		contract (contract-call? contract get-spend-cap-info)
 		none none
 	)
+)
+
+;; Public: Transfer ownership
+(define-public (transfer-ownership (new-owner principal))
+	(let ((caller tx-sender))
+		(begin
+			(asserts! (is-authorized caller) ERR-UNAUTHORIZED)
+			(var-set owner new-owner)
+			(ok true)
+		)
+	)
+)
+
+;; Public: Get owner
+(define-read-only (get-owner)
+	(var-get owner)
 )
 

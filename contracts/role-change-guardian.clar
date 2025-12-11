@@ -240,3 +240,45 @@
 	}
 )
 
+;; Public: Cancel proposal (only by proposer or owner)
+(define-public (cancel-proposal (proposal-id uint))
+	(let ((caller tx-sender))
+		(begin
+			(match (map-get? proposals proposal-id)
+				proposal (begin
+					(asserts! (or (is-authorized caller) (is-eq caller (get proposed-by proposal))) ERR-UNAUTHORIZED)
+					(asserts! (not (get executed proposal)) ERR-PROPOSAL-NOT-FOUND)
+					(map-set proposals proposal-id {
+						proposal-type: (get proposal-type proposal),
+						target: (get target proposal),
+						new-value: (get new-value proposal),
+						proposed-by: (get proposed-by proposal),
+						proposed-at: (get proposed-at proposal),
+						delay-until: (get delay-until proposal),
+						approvals: (get approvals proposal),
+						executed: true
+					})
+					(ok true)
+				)
+				none (err ERR-PROPOSAL-NOT-FOUND)
+			)
+		)
+	)
+)
+
+;; Public: Transfer ownership
+(define-public (transfer-ownership (new-owner principal))
+	(let ((caller tx-sender))
+		(begin
+			(asserts! (is-authorized caller) ERR-UNAUTHORIZED)
+			(var-set owner new-owner)
+			(ok true)
+		)
+	)
+)
+
+;; Public: Get owner
+(define-read-only (get-owner)
+	(var-get owner)
+)
+
