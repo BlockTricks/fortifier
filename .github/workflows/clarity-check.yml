@@ -16,3 +16,4 @@ jobs:
       - name: Check contracts
         run: clarinet check
 
+

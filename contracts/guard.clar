@@ -9,7 +9,7 @@
 (define-constant ERR-INVALID-POLICY (err u2005))
 
 ;; Policy configuration
-(define-data-var owner principal (as-contract tx-sender))
+(define-data-var owner principal tx-sender)
 (define-data-var spend-cap-enabled bool false)
 (define-data-var spend-cap-amount uint u0)
 (define-data-var spend-cap-period uint u0)

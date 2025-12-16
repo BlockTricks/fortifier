@@ -51,15 +51,18 @@ const CONTRACTS = [
   'circuit-breaker'
 ];
 
-async function deployContract(contractName, network, privateKey, isMainnet, deployerAddress) {
+async function deployContract(contractName, network, privateKey, isMainnet) {
   const contractPath = join(__dirname, '..', 'contracts', `${contractName}.clar`);
   const contractCode = readFileSync(contractPath, 'utf8');
   
   // Convert hex private key to Buffer
   const privateKeyBuffer = Buffer.from(privateKey, 'hex');
   
-  // Use the provided deployer address
-  const address = deployerAddress;
+  // Derive address from private key
+  const address = transactions.privateKeyToAddress(
+    privateKeyBuffer,
+    isMainnet ? transactions.AddressVersion.MainnetSingleSig : transactions.AddressVersion.TestnetSingleSig
+  );
   const contractAddress = address;
   
   console.log(`\n📦 Deploying ${contractName}...`);
@@ -82,6 +85,7 @@ async function deployContract(contractName, network, privateKey, isMainnet, depl
       postConditionMode: transactions.PostConditionMode.Allow,
       fee: 10000,
       nonce: nonce,
+      clarityVersion: transactions.ClarityVersion.Clarity4, // Use Clarity 4
     };
 
     const transaction = await transactions.makeContractDeploy(txOptions);
@@ -164,29 +168,29 @@ async function main() {
         console.log(`   Mnemonic words: ${words.length}`);
         console.log(`   First 3 words: ${words.slice(0, 3).join(' ')}`);
         
-        // Try using @stacks/wallet-sdk first
-        try {
-          const wallet = await generateWallet({ secretKey: mnemonic, password: '' });
-          const account = wallet.accounts[0];
-          privateKey = account.stxPrivateKey;
-          console.log(`   ✅ Derived address: ${account.address}`);
-        } catch (walletError) {
-          // Fallback: derive directly using BIP39 and BIP32
-          console.log('   Using direct BIP39 derivation...');
-          const seed = mnemonicToSeedSync(mnemonic);
-          const hdKey = HDKey.fromMasterSeed(seed);
-          // Stacks uses derivation path m/44'/5757'/0'/0/0
-          const stacksKey = hdKey.derive("m/44'/5757'/0'/0/0");
-          privateKey = stacksKey.privateKey?.toString('hex');
-          if (!privateKey) {
-            throw new Error('Failed to derive private key');
-          }
-          const address = transactions.getAddressFromPrivateKey(privateKey, isMainnet ? transactions.AddressVersion.MainnetSingleSig : transactions.AddressVersion.TestnetSingleSig);
-          console.log(`   ✅ Derived address: ${address}`);
+        // Derive directly using BIP39 and BIP32
+        const seed = mnemonicToSeedSync(mnemonic);
+        const hdKey = HDKey.fromMasterSeed(seed);
+        // Stacks uses derivation path m/44'/5757'/0'/0/0
+        const stacksKey = hdKey.derive("m/44'/5757'/0'/0/0");
+        const privateKeyBuffer = stacksKey.privateKey;
+        if (!privateKeyBuffer) {
+          throw new Error('Failed to derive private key from HD key');
         }
+        privateKey = privateKeyBuffer.toString('hex');
+        
+        // Derive address using privateKeyToAddress
+        const address = transactions.privateKeyToAddress(
+          privateKeyBuffer,
+          isMainnet ? transactions.AddressVersion.MainnetSingleSig : transactions.AddressVersion.TestnetSingleSig
+        );
+        console.log(`   ✅ Derived address: ${address}`);
       } catch (error) {
         console.error('❌ Failed to derive private key from mnemonic:', error.message);
         console.error('   Make sure the mnemonic is valid BIP39 format (12 or 24 words)');
+        if (error.stack) {
+          console.error('   Stack:', error.stack);
+        }
         process.exit(1);
       }
     }

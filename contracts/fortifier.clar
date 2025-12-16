@@ -15,7 +15,7 @@
 (define-data-var role-change-guardian-contract principal none)
 
 ;; Owner
-(define-data-var owner principal (as-contract tx-sender))
+(define-data-var owner principal tx-sender)
 
 ;; Events
 (define-event transfer-protected (recipient principal) (amount uint) (blocked bool) (reason (string-ascii 200)))
