@@ -27,7 +27,7 @@
 (define-data-var rate-limit-window-spent uint u0)
 
 ;; Owner/guardian management
-(define-data-var owner principal (as-contract tx-sender))
+(define-data-var owner principal tx-sender)
 (define-data-var guardians (list 10 principal) (list))
 
 ;; Events

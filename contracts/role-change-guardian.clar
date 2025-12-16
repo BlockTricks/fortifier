@@ -23,7 +23,7 @@
 })
 
 ;; Configuration
-(define-data-var owner principal (as-contract tx-sender))
+(define-data-var owner principal tx-sender)
 (define-data-var proposal-counter uint u0)
 (define-data-var min-delay uint u144) ;; Default: 144 blocks (~24 hours)
 (define-data-var required-approvals uint u2) ;; Default: 2 approvals

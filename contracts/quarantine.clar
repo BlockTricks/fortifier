@@ -17,7 +17,7 @@
 })
 
 ;; Owner and guardians
-(define-data-var owner principal (as-contract tx-sender))
+(define-data-var owner principal tx-sender)
 (define-data-var guardians (list 10 principal) (list))
 
 ;; Events
